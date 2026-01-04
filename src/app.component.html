@@ -1,0 +1,102 @@
+<main class="min-h-screen w-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-slate-800">
+  <div class="w-full max-w-2xl mx-auto text-center">
+    @switch (appState()) {
+      @case ('welcome') {
+        <div class="animate-fade-in space-y-6">
+          <div class="inline-block bg-indigo-500/20 text-indigo-400 p-4 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <h1 class="text-5xl font-bold tracking-tight text-white sm:text-6xl">Landmark Lens</h1>
+          <p class="text-lg text-gray-300 max-w-md mx-auto">Discover the stories behind the world's greatest sights. Just point, shoot, and listen.</p>
+          <button (click)="startCamera()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 px-8 rounded-full text-lg transition-transform duration-200 ease-in-out transform hover:scale-105 shadow-lg shadow-indigo-600/30">
+            Start Your Tour
+          </button>
+        </div>
+      }
+      @case ('capturing') {
+        <div class="w-full animate-fade-in">
+          <div class="relative w-full aspect-[4/3] max-w-xl mx-auto rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+            <video #videoElement autoplay playsinline class="w-full h-full object-cover"></video>
+          </div>
+          <div class="mt-6 flex justify-center items-center space-x-4">
+            <button (click)="reset()" class="bg-gray-700 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-full transition">Cancel</button>
+            <button (click)="capturePhoto()" class="w-20 h-20 rounded-full bg-white ring-4 ring-offset-4 ring-offset-gray-900 ring-white hover:bg-gray-200 transition flex items-center justify-center" aria-label="Capture photo">
+              <div class="w-16 h-16 rounded-full bg-white ring-2 ring-gray-900"></div>
+            </button>
+          </div>
+          <canvas #canvasElement class="hidden"></canvas>
+        </div>
+      }
+      @case ('loading') {
+        <div class="space-y-4 animate-pulse">
+            <svg class="mx-auto h-12 w-12 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+            </svg>
+          <h2 class="text-2xl font-semibold text-white">Analyzing Landmark...</h2>
+          <p class="text-gray-400">Our AI is uncovering the secrets of your photo.</p>
+        </div>
+      }
+      @case ('result') {
+        @if (landmarkInfo(); as info) {
+          <div class="w-full text-left bg-gray-800/50 backdrop-blur-lg rounded-2xl shadow-xl overflow-hidden animate-fade-in-up">
+            <div class="relative">
+              <img [src]="capturedImage()" alt="Captured landmark" class="w-full h-64 object-cover" />
+              <div class="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent"></div>
+              <div class="absolute bottom-0 left-0 p-6">
+                <h2 class="text-4xl font-bold text-white">{{ info.name }}</h2>
+              </div>
+            </div>
+            <div class="p-6 space-y-4">
+              <div class="flex items-center space-x-4">
+                <button (click)="toggleNarration()" class="flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center text-white transition" [class.bg-indigo-600]="!isNarrating()" [class.bg-pink-600]="isNarrating()">
+                  @if (!isNarrating()) {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm8 3a1 1 0 00-1.555-.832L8.387 8.168a1 1 0 000 1.664l2.058 1.028A1 1 0 0012 10V7z" /></svg>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4a1 1 0 00-2 0v12a1 1 0 102 0V4zm11 0a1 1 0 00-2 0v12a1 1 0 102 0V4z" clip-rule="evenodd" /></svg>
+                  }
+                </button>
+                <div class="text-left">
+                  <p class="font-semibold text-lg">{{ isNarrating() ? 'Narrating...' : 'Play Narration' }}</p>
+                  <p class="text-sm text-gray-400">Listen to the story of this place.</p>
+                </div>
+              </div>
+              <p class="text-gray-300 leading-relaxed">{{ info.history }}</p>
+              
+              @if (info.sources && info.sources.length > 0) {
+                <div class="pt-4 border-t border-white/10">
+                  <h3 class="font-semibold text-white mb-2">Sources</h3>
+                  <div class="flex flex-wrap gap-2">
+                    @for (source of info.sources; track source.web.uri) {
+                      <a [href]="source.web.uri" target="_blank" class="text-sm bg-gray-700/50 hover:bg-gray-600/50 text-indigo-300 px-3 py-1 rounded-full transition-colors">
+                        {{ source.web.title }}
+                      </a>
+                    }
+                  </div>
+                </div>
+              }
+              
+              <button (click)="reset()" class="w-full mt-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition">
+                Scan Another Landmark
+              </button>
+            </div>
+          </div>
+        }
+      }
+      @case ('error') {
+        <div class="animate-fade-in space-y-6 text-center bg-red-900/50 border border-red-500/50 p-8 rounded-2xl">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          <h2 class="text-3xl font-bold text-white">Something Went Wrong</h2>
+          <p class="text-red-200">{{ errorMessage() }}</p>
+          <button (click)="reset()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-8 rounded-full transition-transform duration-200 ease-in-out transform hover:scale-105">
+            Try Again
+          </button>
+        </div>
+      }
+    }
+  </div>
+</main>
